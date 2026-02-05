@@ -1,0 +1,170 @@
+
+- name: Install Temurin 21 JDK
+  ansible.builtin.apt:
+    name: temurin-21-jdk
+    state: present
+
+- name: Ensure /etc/apt/keyrings exists
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Download Jenkins GPG key
+  ansible.builtin.get_url:
+    url: https://pkg.jenkins.io/debian/jenkins.io-2026.key
+    dest: /etc/apt/keyrings/jenkins-keyring.asc
+    mode: "0644"
+
+- name: Add Jenkins repository
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/jenkins.list
+    content: |
+      deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian binary/
+    mode: "0644"
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Install Jenkins
+  ansible.builtin.apt:
+    name: jenkins
+    state: present
+
+- name: Ensure Jenkins systemd override directory exists
+  ansible.builtin.file:
+    path: /etc/systemd/system/jenkins.service.d
+    state: directory
+    mode: "0755"
+
+- name: Configure Jenkins to use Temurin 21
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/jenkins.service.d/override.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Service]
+      Environment="JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64"
+      Environment="JENKINS_JAVA_CMD=/usr/lib/jvm/temurin-21-jdk-amd64/bin/java"
+
+- name: Reload systemd to pick up Jenkins override
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: Ensure Jenkins is started and enabled
+  ansible.builtin.service:
+    name: jenkins
+    state: restarted
+    enabled: yes
+
+- name: Ensure Jenkins is stopped before configuration
+  ansible.builtin.service:
+    name: jenkins
+    state: stopped
+
+- name: Ensure Jenkins plugins directory exists
+  ansible.builtin.file:
+    path: /var/lib/jenkins/plugins
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: "0755"
+
+- name: Download Jenkins plugins
+  ansible.builtin.get_url:
+    url: "https://updates.jenkins.io/latest/{{ item }}.hpi"
+    dest: "/var/lib/jenkins/plugins/{{ item }}.hpi"
+    owner: jenkins
+    group: jenkins
+    mode: "0644"
+  loop:
+    - ionicons-api
+    - caffeine-api
+    - commons-lang3-api
+    - commons-text-api
+    - gson-api
+    - jackson2-api
+    - json-api
+    - snakeyaml-api
+    - asm-api
+    - jakarta-mail-api
+    - jakarta-activation-api
+    - jakarta-xml-bind-api
+    - javax-activation-api
+    - jaxb
+    - joda-time-api
+    - bouncycastle-api
+    - variant
+    - workflow-support
+    - durable-task
+    - structs
+    - scm-api
+    - branch-api
+    - cloudbees-folder
+    - script-security
+    - workflow-step-api
+    - pipeline-groovy-lib
+    - credentials
+    - plain-credentials
+    - ssh-credentials
+    - credentials-binding
+    - workflow-aggregator
+    - workflow-api
+    - workflow-basic-steps
+    - workflow-cps
+    - workflow-cps-global-lib
+    - workflow-durable-task-step
+    - workflow-job
+    - workflow-multibranch
+    - workflow-scm-step
+    - pipeline-build-step
+    - pipeline-input-step
+    - pipeline-milestone-step
+    - pipeline-model-api
+    - pipeline-model-definition
+    - pipeline-model-extensions
+    - pipeline-stage-step
+    - pipeline-stage-view
+    - pipeline-rest-api
+    - apache-httpcomponents-client-4-api
+    - mina-sshd-api-core
+    - mina-sshd-api-common
+    - git-client
+    - git
+    - ansicolor
+    - job-dsl
+    - mailer
+    - git-server
+    - pipeline-graph-analysis
+    - instance-identity
+    - display-url-api
+    - sshd
+
+
+- name: Copy Jenkins JCasC configuration
+  ansible.builtin.copy:
+    dest: /var/lib/jenkins/casc.yaml
+    owner: jenkins
+    group: jenkins
+    mode: "0644"
+    content: |
+      jenkins:
+        systemMessage: "Jenkins Ansible + JCasC segítségével"
+
+      unclassified:
+        location:
+          url: "http://192.168.56.50:8080/"
+
+- name: Configure Jenkins to use JCasC
+  ansible.builtin.lineinfile:
+    path: /etc/default/jenkins
+    regexp: '^CASC_JENKINS_CONFIG='
+    line: 'CASC_JENKINS_CONFIG=/var/lib/jenkins/casc.yaml'
+
+- name: Start Jenkins
+  ansible.builtin.service:
+    name: jenkins
+    state: started
+    enabled: yes

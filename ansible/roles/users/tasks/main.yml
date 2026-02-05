@@ -1,0 +1,17 @@
+- name: Create udemx user
+  ansible.builtin.user:
+    name: "{{ user_name }}"
+    state: present
+    groups: sudo
+    shell: /bin/bash
+    create_home: yes
+    home: "{{ udemx_home }}"
+    password: "{{ udemx_password | password_hash('sha512') }}"
+    
+- name: Create udemx home directory
+  ansible.builtin.file:
+    path: "{{ udemx_home }}"
+    state: directory
+    owner: "{{ user_name }}"
+    group: "{{ user_name }}"
+    mode: "0755"

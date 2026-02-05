@@ -1,0 +1,61 @@
+- name: Install openssh-server
+  ansible.builtin.apt:
+    name: openssh-server
+    state: present
+
+- name: Ensure sshd_config is deployed
+  ansible.builtin.template:
+    src: sshd_config.j2
+    dest: /etc/ssh/sshd_config
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Ensure SSH directory exists
+  ansible.builtin.file:
+    path: "{{ udemx_home }}/.ssh"
+    state: directory
+    owner: "{{ user_name }}"
+    group: "{{ user_name }}"
+    mode: "0700"
+
+- name: Check if host public key exists
+  ansible.builtin.stat:
+    path: "{{ host_ssh_pub_key }}"
+  delegate_to: localhost
+  register: host_pub_key
+  run_once: true
+
+- name: Fail if host public key is missing
+  ansible.builtin.fail:
+    msg: "Host public key not found: {{ host_ssh_pub_key }}"
+  when: not host_pub_key.stat.exists
+
+- name: Install public key into authorized_keys
+  ansible.builtin.authorized_key:
+    user: "{{ user_name }}"
+    key: "{{ lookup('file', host_ssh_pub_key) }}"
+    state: present
+
+- name: Restart ssh
+  ansible.builtin.service:
+    name: ssh
+    state: restarted
+
+- name: Change SSH port to 2222
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?Port'
+    line: 'Port 2222'
+
+- name: Restart ssh after port change
+  ansible.builtin.service:
+    name: ssh
+    state: restarted
+
+- name: Set connection port for rest of playbook
+  ansible.builtin.set_fact:
+    ansible_port: 2222
+
+- name: Reset SSH connection so Ansible reconnects on new port
+  meta: reset_connection

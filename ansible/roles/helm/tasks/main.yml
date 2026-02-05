@@ -1,0 +1,13 @@
+- name: Install Helm
+  ansible.builtin.shell: |
+    curl -fsSL https://get.helm.sh/helm-{{ helm_version }}-linux-amd64.tar.gz -o /tmp/helm.tar.gz
+    tar -zxvf /tmp/helm.tar.gz -C /tmp
+    mv /tmp/linux-amd64/helm /usr/local/bin/helm
+    chmod +x /usr/local/bin/helm
+  args:
+    creates: /usr/local/bin/helm
+
+- name: Create namespaces
+  ansible.builtin.shell: |
+    kubectl create namespace {{ nginx_namespace }} --dry-run=client -o yaml | kubectl apply -f -
+    kubectl create namespace {{ app_namespace }} --dry-run=client -o yaml | kubectl apply -f -

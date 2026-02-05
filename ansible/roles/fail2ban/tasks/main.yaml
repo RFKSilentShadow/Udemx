@@ -1,0 +1,73 @@
+- name: Set fail2ban to use UFW
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.local
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [DEFAULT]
+      banaction = ufw
+
+- name: Configure fail2ban for Nginx (disabled)
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.d/nginx.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [nginx-http-auth]
+      enabled = false
+      port = http,https
+      logpath = /var/log/nginx/error.log
+      maxretry = 3
+      bantime = 1h
+
+      [nginx-botsearch]
+      enabled = false
+      port = http,https
+      logpath = /var/log/nginx/access.log
+      maxretry = 2
+      bantime = 24h
+
+      [nginx-req-limit]
+      enabled = false
+      port = http,https
+      logpath = /var/log/nginx/error.log
+      maxretry = 10
+      findtime = 1m
+      bantime = 10m
+      filter = nginx-req-limit
+
+- name: Create Fail2Ban filter for nginx-req-limit
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/filter.d/nginx-req-limit.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [Definition]
+      failregex = ^<HOST> -.*"(GET|POST).*HTTP.*" 429
+      ignoreregex =
+
+- name: Configure fail2ban for SSH
+  ansible.builtin.copy:
+    dest: /etc/fail2ban/jail.d/sshd.conf
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      [sshd]
+      enabled = true
+      port = 2222
+      filter = sshd
+      logpath = /var/log/auth.log
+      maxretry = 5
+      findtime = 10m
+      bantime = 1h
+      backend = systemd
+      
+- name: Restart fail2ban
+  ansible.builtin.service:
+    name: fail2ban
+    state: restarted
+    enabled: true

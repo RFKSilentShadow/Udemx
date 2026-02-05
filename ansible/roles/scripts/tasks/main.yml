@@ -1,0 +1,69 @@
+- name: Create scripts directory
+  ansible.builtin.file:
+    path: "{{ scripts_dir }}"
+    state: directory
+    owner: "{{ user_name }}"
+    group: "{{ user_name }}"
+    mode: "0755"
+
+- name: Deploy db-backup script
+  ansible.builtin.copy:
+    dest: "{{ scripts_dir }}/db-backup.sh"
+    mode: "0755"
+    content: |
+      #!/usr/bin/env bash
+      DATE=$(date +%F)
+      DEST="{{ scripts_dir }}/db-backup-$DATE"
+      mkdir -p "$DEST"
+      kubectl -n {{ app_namespace }} exec deploy/{{ db_release }} -- mysqldump -u{{ db_user }} -p{{ db_pass }} {{ db_name }} > "$DEST/{{ db_name }}.sql"
+
+- name: Deploy last-three-mod script
+  ansible.builtin.copy:
+    dest: "{{ scripts_dir }}/last-three-mod.sh"
+    mode: "0755"
+    content: |
+      #!/usr/bin/env bash
+      DATE=$(date +%F)
+      find /var/log -type f -printf "%T@ %p\n" \
+        | sort -nr \
+        | head -n 3 \
+        | awk '{print $2}' \
+        > "{{ scripts_dir }}/last-three-mod-files-$DATE.out"
+
+- name: Deploy last-five-day-mod-files script
+  ansible.builtin.copy:
+    dest: "{{ scripts_dir }}/last-five-day-mod-files.sh"
+    mode: "0755"
+    content: |
+      #!/usr/bin/env bash
+      DATE=$(date +%F)
+      find /var/log -type f -mtime -5 > "{{ scripts_dir }}/last-five-day-mod-files-$DATE.out"
+
+- name: Deploy loadavg script
+  ansible.builtin.copy:
+    dest: "{{ scripts_dir }}/loadavg.sh"
+    mode: "0755"
+    content: |
+      #!/usr/bin/env bash
+      DATE=$(date +%F)
+      TIME=$(date +%T)
+      echo "$TIME $(cat /proc/loadavg | awk '{print $1, $2, $3}')" >> "/var/log/loadavg-$DATE.out"
+
+- name: Create cron jobs
+  ansible.builtin.copy:
+    dest: /etc/cron.d/udemx-scripts
+    mode: "0644"
+    content: |
+      # m h dom mon dow user command
+      0 2 * * * root {{ scripts_dir }}/db-backup.sh
+      */15 * * * * root {{ scripts_dir }}/loadavg.sh
+      0 3 * * * root {{ scripts_dir }}/last-three-mod.sh
+      0 4 * * * root {{ scripts_dir }}/last-five-day-mod-files.sh
+
+- name: Copy mount-tmp.sh to /opt/udemx
+  ansible.builtin.copy:
+    src: mount-tmp.sh
+    dest: /opt/udemx/mount-tmp.sh
+    owner: udemx
+    group: udemx
+    mode: '0755'

@@ -1,0 +1,21 @@
+- name: Add bitnami repo
+  ansible.builtin.command: helm repo add bitnami https://charts.bitnami.com/bitnami
+
+- name: Update helm repos
+  ansible.builtin.command: helm repo update
+
+- name: Install MariaDB
+  ansible.builtin.command: >
+    helm upgrade --install {{ db_release }} bitnami/mariadb
+    --namespace {{ db_namespace }}
+    --create-namespace
+    --set auth.rootPassword={{ db_root_pass }}
+    --set auth.database={{ db_name }}
+    --set auth.username={{ db_user }}
+    --set auth.password={{ db_pass }}
+  environment:
+    KUBECONFIG: /opt/udemx/.kube/config
+
+- name: Wait for MariaDB pod ready
+  ansible.builtin.shell: |
+    kubectl -n {{ db_namespace }} wait --for=condition=ready pod -l app.kubernetes.io/name=mariadb --timeout=300s

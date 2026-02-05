@@ -1,0 +1,26 @@
+- name: Add Adoptium apt key
+  ansible.builtin.apt_key:
+    url: https://packages.adoptium.net/artifactory/api/gpg/key/public
+    state: present
+
+- name: Add Adoptium repo
+  ansible.builtin.apt_repository:
+    repo: "deb https://packages.adoptium.net/artifactory/deb bullseye main"
+
+- name: Install OpenJDK 8 and 11
+  ansible.builtin.apt:
+    name:
+      - temurin-8-jdk
+      - temurin-11-jdk
+    state: present
+    update_cache: yes
+
+- name: Set default javac to Java 8
+  ansible.builtin.alternatives:
+    name: javac
+    path: /usr/lib/jvm/temurin-8-jdk-amd64/bin/javac
+
+- name: Set default java to Java 8
+  ansible.builtin.alternatives:
+    name: java
+    path: /usr/lib/jvm/temurin-8-jdk-amd64/bin/java

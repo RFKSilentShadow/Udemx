@@ -1,0 +1,50 @@
+- name: UDEMX DevOps task - full provisioning
+  hosts: all
+  become: true
+
+  vars:
+    root_password: "Alma1234"
+    ssh_port: 2222
+    user_name: "udemx"
+    udemx_password: "UdemxPass123!"
+    user_email: "udemx@udemx.eu"
+    udemx_home: "/opt/udemx"
+    scripts_dir: "/opt/scripts"
+    db_root_pass: "UdemxPass123!"
+    db_name: "udemx_db"
+    db_user: "udemx"
+    db_pass: "UdemxPass123!"
+    db_namespace: "mariadb"
+    k3s_version: "v1.28.6+k3s1"
+    helm_version: "v4.0.0"
+    nginx_namespace: "ingress-controller"
+    app_namespace: "udemx"
+    app_release: "udemx-app"
+    db_release: "udemx-db"
+    ingress_release: "udemx-ingress"
+    app_image: "udemx/hello:latest"
+    registry_host: "registry.local"
+    registry_port: 5000
+    registry_base_dir: /opt/registry
+    host_ssh_pub_key: "/home/medzsi/.ssh/id_ed25519.pub"
+    host_git_ssh_private_key: "/home/medzsi/.ssh/id_ed25519"
+    
+
+  roles:
+    - role: disk
+    - role: base
+    - role: users
+    - role: packages
+    - role: ssh
+    - role: java
+    - role: git
+    - role: docker  
+    - role: k3s
+    - role: helm
+    - role: nginx_ingress
+    - role: fail2ban
+    - role: mysql
+    - role: udemx_app
+    - role: demo_app
+    - role: scripts
+    - role: jenkins

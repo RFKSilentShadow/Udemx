@@ -1,0 +1,61 @@
+- name: Add bitnami repo
+  ansible.builtin.command: helm repo add bitnami https://charts.bitnami.com/bitnami
+  args:
+    creates: /root/.cache/helm/repository/bitnami-index.yaml
+
+- name: Update helm repos
+  ansible.builtin.command: helm repo update
+
+- name: Ensure wordpress namespace exists
+  ansible.builtin.command: kubectl create namespace wordpress
+  register: wp_ns
+  failed_when: wp_ns.rc != 0 and "AlreadyExists" not in wp_ns.stderr
+  changed_when: wp_ns.rc == 0
+  environment:
+    KUBECONFIG: /opt/udemx/.kube/config
+
+- name: Generate self-signed certificate for WordPress
+  ansible.builtin.shell: |
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+      -keyout /tmp/udemx.key -out /tmp/udemx.crt \
+      -subj "/CN=wordpress.udemx.local/O=udemx" \
+      -addext "subjectAltName=DNS:wordpress.udemx.local"
+  args:
+    creates: /tmp/udemx.crt
+
+- name: Create TLS secret for WordPress
+  ansible.builtin.shell: |
+    kubectl -n wordpress create secret tls udemx-wp-tls \
+      --cert=/tmp/udemx.crt \
+      --key=/tmp/udemx.key \
+      --dry-run=client -o yaml | kubectl apply -f -
+  environment:
+    KUBECONFIG: /opt/udemx/.kube/config
+
+- name: Deploy WordPress with external MariaDB and HTTPS
+  ansible.builtin.command: >
+    helm upgrade --install wordpress bitnami/wordpress
+    --namespace wordpress
+    --set mariadb.enabled=false
+    --set externalDatabase.host={{ db_release }}-mariadb.{{ db_namespace }}.svc.cluster.local
+    --set externalDatabase.user={{ db_user }}
+    --set externalDatabase.password={{ db_pass }}
+    --set externalDatabase.database={{ db_name }}
+    --set service.type=ClusterIP
+    --set ingress.enabled=true
+    --set ingress.ingressClassName=nginx
+    --set ingress.hostname=wordpress.udemx.local
+    --set ingress.tls=true
+    --set ingress.extraTls[0].hosts[0]=wordpress.udemx.local
+    --set ingress.extraTls[0].secretName=udemx-wp-tls
+  environment:
+    KUBECONFIG: /opt/udemx/.kube/config
+
+- name: Wait for WordPress pod ready
+  ansible.builtin.shell: |
+    kubectl -n wordpress wait \
+      --for=condition=ready pod \
+      -l app.kubernetes.io/name=wordpress \
+      --timeout=300s
+  environment:
+    KUBECONFIG: /opt/udemx/.kube/config

@@ -1,0 +1,71 @@
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Upgrade all packages
+  ansible.builtin.apt:
+    upgrade: dist
+
+- name: Install basic packages
+  ansible.builtin.apt:
+    name:
+      - sudo
+      - mc
+      - htop
+      - fail2ban
+      - ufw
+      - curl
+      - wget
+      - gnupg
+      - lsb-release
+      - software-properties-common
+      - apt-transport-https
+      - ca-certificates
+    state: present
+
+- name: Configure UFW default deny
+  ansible.builtin.ufw:
+    state: enabled
+    direction: incoming
+    policy: deny
+
+- name: Allow SSH port
+  ansible.builtin.ufw:
+    rule: allow
+    port: "{{ ssh_port }}"
+    proto: tcp
+
+- name: Allow HTTP
+  ansible.builtin.ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+
+- name: Allow HTTPS
+  ansible.builtin.ufw:
+    rule: allow
+    port: "443"
+    proto: tcp
+
+- name: Allow Jenkins
+  ansible.builtin.ufw:
+    rule: allow
+    port: "8080"
+    proto: tcp
+
+- name: Allow Docker Registry UI
+  ansible.builtin.ufw:
+    rule: allow
+    port: "8081"
+    proto: tcp
+
+- name: Allow Kubernetes (if needed)
+  ansible.builtin.ufw:
+    rule: allow
+    port: "6443"
+    proto: tcp
+  ignore_errors: true
+
+- name: Enable UFW
+  ansible.builtin.command: ufw --force enable
+  changed_when: false

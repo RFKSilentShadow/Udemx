@@ -1,0 +1,122 @@
+- name: Install prerequisites
+  ansible.builtin.apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+    state: present
+
+- name: Add Docker GPG key
+  ansible.builtin.apt_key:
+    url: https://download.docker.com/linux/debian/gpg
+    state: present
+
+- name: Add Docker repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64] https://download.docker.com/linux/debian {{ ansible_distribution_release }} stable"
+    state: present
+
+- name: Install Docker Engine
+  ansible.builtin.apt:
+    name:
+      - docker-ce
+      - docker-ce-cli
+      - containerd.io
+    state: present
+    update_cache: yes
+
+- name: Add user to docker group
+  ansible.builtin.user:
+    name: "{{ user_name }}"
+    groups: docker
+    append: yes
+
+- name: Install docker-compose plugin
+  ansible.builtin.apt:
+    name: docker-compose-plugin
+    state: present
+
+- name: Ensure docker service running
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: yes
+
+- name: Create registry directories
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: "0755"
+  loop:
+    - "{{ registry_base_dir }}"
+    - "{{ registry_base_dir }}/data"
+    - "{{ registry_base_dir }}/config"
+
+- name: Create docker network for registry
+  community.docker.docker_network:
+    name: registry_net
+    state: present
+
+- name: Deploy Docker Registry config
+  ansible.builtin.copy:
+    dest: "{{ registry_base_dir }}/config/config.yml"
+    mode: "0644"
+    content: |
+      version: 0.1
+
+      storage:
+        filesystem:
+          rootdirectory: /var/lib/registry
+
+      http:
+        addr: :5000
+        headers:
+          Access-Control-Allow-Origin:
+            - "*"
+          Access-Control-Allow-Methods:
+            - GET
+            - POST
+            - PUT
+            - DELETE
+            - OPTIONS
+          Access-Control-Allow-Headers:
+            - Authorization
+            - Content-Type
+            - Docker-Content-Digest
+            - Docker-Distribution-Api-Version
+          Access-Control-Expose-Headers:
+            - Docker-Content-Digest
+            - Docker-Distribution-Api-Version
+          Access-Control-Allow-Credentials:
+            - "true"
+
+- name: Run private Docker registry
+  community.docker.docker_container:
+    name: registry
+    image: registry:2
+    state: started
+    restart_policy: always
+    ports:
+      - "5000:5000"
+    volumes:
+      - "{{ registry_base_dir }}/data:/var/lib/registry"
+      - "{{ registry_base_dir }}/config/config.yml:/etc/docker/registry/config.yml"
+    networks:
+      - name: registry_net
+
+- name: Run Docker registry UI
+  community.docker.docker_container:
+    name: registry-ui
+    image: joxit/docker-registry-ui:latest
+    state: started
+    restart_policy: always
+    ports:
+      - "8081:80"
+    env:
+      REGISTRY_TITLE: "Udemx Private Registry"
+      REGISTRY_URL: "http://192.168.56.50:5000"
+      NGINX_PROXY_PASS_URL: "http://192.168.56.50:5000"
+      DELETE_IMAGES: "true"
+      SINGLE_REGISTRY: "true"
