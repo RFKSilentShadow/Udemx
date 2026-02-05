@@ -23,6 +23,21 @@ The provisioning will:
 - kvm
 - Ansible installed locally with libvirt plugin
 
+## SSH Keys Configuration (Required)
+Before running `vagrant up`, you must configure your own SSH key paths in the main Ansible playbook.
+
+Open the playbook and set the following variables:
+```yaml
+host_ssh_pub_key: "<your_ssh_pubkey_path>"
+host_git_ssh_private_key: "<your_ssh_privkey_path>"
+```
+
+### Example
+```yaml
+host_ssh_pub_key: "/home/user/.ssh/id_rsa.pub"
+host_git_ssh_private_key: "/home/user/.ssh/id_rsa"
+```
+
 ## Access
 - SSH: port **2222**
 - Default VM IP: `192.168.56.50`
