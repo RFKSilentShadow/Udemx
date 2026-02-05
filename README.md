@@ -70,3 +70,6 @@ What it does:
 - Adds the entry to /etc/fstab for persistence across reboots
 
 After running the script or role, /tmp will be on its dedicated partition and survive VM reboots.
+
+## vim exit command
+`:q`
