@@ -13,8 +13,8 @@ pipeline {
 
     stage('Checkout') {
       steps {
-        git credentialsId: 'github-key',
-            url: 'git@github.com:RFKSilentShadow/Udemx.git'
+        git url: 'https://github.com/RFKSilentShadow/Udemx.git',
+            branch: 'main'
       }
     }
 
@@ -26,16 +26,9 @@ pipeline {
 
     stage('Push') {
       steps {
-        withCredentials([usernamePassword(
-          credentialsId: 'registry-creds',
-          usernameVariable: 'USER',
-          passwordVariable: 'PASS'
-        )]) {
-          sh """
-            echo \$PASS | docker login $REGISTRY -u \$USER --password-stdin
-            docker push $REGISTRY/$IMAGE:$TAG
-          """
-        }
+        sh """
+          docker push $REGISTRY/$IMAGE:$TAG
+        """
       }
     }
 
