@@ -14,9 +14,10 @@ The provisioning will:
 - Install Kubernetes (k3s), Helm
 - Deploy nginx ingress + self-signed TLS
 - Deploy MariaDB with `udemx` user + database
-- Deploy a demo app returning **Hello UDEMX!**
+- Deploy Wordpress as demo app connecting to database
+- Deploy app returning **Hello UDEMX!**
 - Create scripts under `/opt/scripts`
-- Install Jenkins + private Docker registry + Portainer
+- Install Jenkins + private Docker registry
 
 ## Requirements
 - Vagrant
