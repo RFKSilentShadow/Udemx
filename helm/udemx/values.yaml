@@ -1,0 +1,16 @@
+replicaCount: 1
+
+image:
+  repository: registry.local:5000/udemx/hello
+  tag: latest
+  pullPolicy: Always
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  host: udemx.local
+
+namespace: udemx
