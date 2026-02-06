@@ -26,9 +26,7 @@ pipeline {
 
     stage('Push') {
       steps {
-        sh """
-          docker push $REGISTRY/$IMAGE:$TAG
-        """
+        sh "docker push $REGISTRY/$IMAGE:$TAG"
       }
     }
 
@@ -41,5 +39,12 @@ pipeline {
         """
       }
     }
+
+    stage('Restart Pods') {
+      steps {
+        sh "kubectl rollout restart deployment/$RELEASE -n $NAMESPACE"
+      }
+    }
+
   }
 }
