@@ -142,7 +142,6 @@
     - display-url-api
     - sshd
 
-
 - name: Copy Jenkins JCasC configuration
   ansible.builtin.copy:
     dest: /var/lib/jenkins/casc.yaml
@@ -151,7 +150,31 @@
     mode: "0644"
     content: |
       jenkins:
-        systemMessage: "Jenkins Ansible + JCasC segítségével"
+        systemMessage: "UDEMX Fully Automated Jenkins"
+
+        numExecutors: 2
+
+      jobs:
+        - script: >
+            pipelineJob('udemx') {
+              definition {
+                cpsScm {
+                  scm {
+                    git {
+                      remote {
+                        url('git@github.com:RFKSilentShadow/Udemx.git')
+                      }
+                      branches('*/main')
+                    }
+                  }
+                  scriptPath('Jenkinsfile')
+                }
+              }
+
+              triggers {
+                scm('H/2 * * * *')
+              }
+            }
 
       unclassified:
         location:
@@ -168,3 +191,34 @@
     name: jenkins
     state: started
     enabled: yes
+
+- name: Ensure jenkins ssh dir
+  file:
+    path: /var/lib/jenkins/.ssh
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: 0700
+
+- name: Copy github private key to jenkins
+  copy:
+    src: "{{ host_git_ssh_private_key }}"
+    dest: /var/lib/jenkins/.ssh/id_ed25519
+    owner: jenkins
+    group: jenkins
+    mode: 0600
+
+- name: Add github to known_hosts
+  become_user: jenkins
+  shell: ssh-keyscan github.com >> /var/lib/jenkins/.ssh/known_hosts
+
+- name: Add jenkins to docker group
+  user:
+    name: jenkins
+    groups: docker
+    append: yes
+
+- name: Restart Jenkins
+  service:
+    name: jenkins
+    state: restarted
