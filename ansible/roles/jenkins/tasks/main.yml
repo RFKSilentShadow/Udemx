@@ -48,21 +48,23 @@
       [Service]
       Environment="JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64"
       Environment="JENKINS_JAVA_CMD=/usr/lib/jvm/temurin-21-jdk-amd64/bin/java"
+      Environment="CASC_JENKINS_CONFIG=/var/lib/jenkins/casc.yaml"
+      Environment="KUBECONFIG=/opt/kubeconfig"
 
 - name: Reload systemd to pick up Jenkins override
   ansible.builtin.systemd:
     daemon_reload: yes
 
-- name: Ensure Jenkins is started and enabled
-  ansible.builtin.service:
-    name: jenkins
-    state: restarted
-    enabled: yes
-
 - name: Ensure Jenkins is stopped before configuration
   ansible.builtin.service:
     name: jenkins
     state: stopped
+
+- name: Add jenkins to docker group
+  user:
+    name: jenkins
+    groups: docker
+    append: yes
 
 - name: Ensure Jenkins plugins directory exists
   ansible.builtin.file:
@@ -75,11 +77,14 @@
 - name: Download Jenkins plugins
   ansible.builtin.get_url:
     url: "https://updates.jenkins.io/latest/{{ item }}.hpi"
-    dest: "/var/lib/jenkins/plugins/{{ item }}.hpi"
+    dest: "/var/lib/jenkins/plugins/{{ item }}.jpi"
     owner: jenkins
     group: jenkins
     mode: "0644"
+
   loop:
+    - configuration-as-code
+    - pipeline-stage-tags-metadata
     - ionicons-api
     - caffeine-api
     - commons-lang3-api
@@ -142,83 +147,34 @@
     - display-url-api
     - sshd
 
-- name: Copy Jenkins JCasC configuration
-  ansible.builtin.copy:
-    dest: /var/lib/jenkins/casc.yaml
+- name: Create udemx Jenkins job directory
+  file:
+    path: /var/lib/jenkins/jobs/udemx
+    state: directory
     owner: jenkins
     group: jenkins
-    mode: "0644"
-    content: |
-      jenkins:
-        systemMessage: "UDEMX Fully Automated Jenkins"
+    mode: 0755
 
-        numExecutors: 2
+- name: Install udemx Jenkins job config
+  copy:
+    src: udemx-config.xml
+    dest: /var/lib/jenkins/jobs/udemx/config.xml
+    owner: jenkins
+    group: jenkins
+    mode: 0644
 
-      jobs:
-        - script: >
-            pipelineJob('udemx') {
-              definition {
-                cpsScm {
-                  scm {
-                    git {
-                      remote {
-                        url('git@github.com:RFKSilentShadow/Udemx.git')
-                      }
-                      branches('*/main')
-                    }
-                  }
-                  scriptPath('Jenkinsfile')
-                }
-              }
+- name: Copy admin kubeconfig for jenkins
+  become: true
+  ansible.builtin.copy:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: "/opt/kubeconfig"
+    remote_src: true
+    owner: "jenkins"
+    group: "jenkins"
+    mode: "0600"
 
-              triggers {
-                scm('H/2 * * * *')
-              }
-            }
-
-      unclassified:
-        location:
-          url: "http://192.168.56.50:8080/"
-
-- name: Configure Jenkins to use JCasC
-  ansible.builtin.lineinfile:
-    path: /etc/default/jenkins
-    regexp: '^CASC_JENKINS_CONFIG='
-    line: 'CASC_JENKINS_CONFIG=/var/lib/jenkins/casc.yaml'
-
-- name: Start Jenkins
+- name: Start Jenkins after full config
   ansible.builtin.service:
     name: jenkins
     state: started
     enabled: yes
-
-- name: Ensure jenkins ssh dir
-  file:
-    path: /var/lib/jenkins/.ssh
-    state: directory
-    owner: jenkins
-    group: jenkins
-    mode: 0700
-
-- name: Copy github private key to jenkins
-  copy:
-    src: "{{ host_git_ssh_private_key }}"
-    dest: /var/lib/jenkins/.ssh/id_ed25519
-    owner: jenkins
-    group: jenkins
-    mode: 0600
-
-- name: Add github to known_hosts
-  become_user: jenkins
-  shell: ssh-keyscan github.com >> /var/lib/jenkins/.ssh/known_hosts
-
-- name: Add jenkins to docker group
-  user:
-    name: jenkins
-    groups: docker
-    append: yes
-
-- name: Restart Jenkins
-  service:
-    name: jenkins
-    state: restarted
