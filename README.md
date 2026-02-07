@@ -4,8 +4,19 @@
 This repository contains a full automated solution for the DevOps task.  
 After cloning the repo, run:
 
+If libvirt is your default provider, simply run:
 ```bash
 vagrant up
+```
+
+If not, specify it explicitly:
+```bash
+vagrant up --provider=libvirt
+```
+
+Optionally, you can make libvirt your default provider:
+```bash
+export VAGRANT_DEFAULT_PROVIDER=libvirt
 ```
 
 The provisioning will:
@@ -21,8 +32,9 @@ The provisioning will:
 
 ## Requirements
 - Vagrant
-- kvm
-- Ansible installed locally with libvirt plugin
+- libvirt / KVM installed on host
+- Vagrant libvirt plugin (`vagrant-libvirt`)
+- Ansible installed locally
 
 ## SSH Keys Configuration (Required)
 Before running `vagrant up`, you must configure your own SSH key paths in the main Ansible playbook.
