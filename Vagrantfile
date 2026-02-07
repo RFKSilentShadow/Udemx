@@ -15,6 +15,17 @@ Vagrant.configure("2") do |config|
     type: "rsync",
     rsync__auto: true
 
+  config.vm.provision "shell", inline: <<-SHELL
+    mkfs.ext4 -F /dev/vdb
+    mount /dev/vdb /opt
+    chmod 0755 /opt
+    echo '/dev/vdb /opt ext4 defaults 0 2' >> /etc/fstab
+    mkfs.ext4 -F /dev/vdc
+    mount /dev/vdc /tmp
+    chmod 1777 /tmp
+    echo '/dev/vdc /tmp ext4 defaults 0 2' >> /etc/fstab
+  SHELL
+
   config.vm.provision "ansible" do |ansible|
     ansible.playbook = "ansible/playbook.yml"
     ansible.inventory_path = "ansible/inventory.ini"

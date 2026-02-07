@@ -33,7 +33,6 @@
     host_git_ssh_private_key: "<your_ssh_privkey_path>"
 
   roles:
-    - role: disk
     - role: base
     - role: users
     - role: packages

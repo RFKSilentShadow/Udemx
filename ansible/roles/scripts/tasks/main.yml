@@ -59,11 +59,3 @@
       */15 * * * * root {{ scripts_dir }}/loadavg.sh
       0 3 * * * root {{ scripts_dir }}/last-three-mod.sh
       0 4 * * * root {{ scripts_dir }}/last-five-day-mod-files.sh
-
-- name: Copy mount-tmp.sh to /opt/udemx
-  ansible.builtin.copy:
-    src: mount-tmp.sh
-    dest: /opt/udemx/mount-tmp.sh
-    owner: udemx
-    group: udemx
-    mode: '0755'
