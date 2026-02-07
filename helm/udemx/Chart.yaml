@@ -1,6 +1,0 @@
-apiVersion: v2
-name: udemx
-description: UDEMX demo app
-type: application
-version: 0.1.0
-appVersion: "1.0"
