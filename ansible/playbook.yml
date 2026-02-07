@@ -37,6 +37,7 @@
     - role: base
     - role: users
     - role: packages
+    - role: ufw
     - role: ssh
     - role: java
     - role: git

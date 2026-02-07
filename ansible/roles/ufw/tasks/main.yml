@@ -1,0 +1,27 @@
+- name: Configure UFW default deny
+  ansible.builtin.ufw:
+    state: enabled
+    direction: incoming
+    policy: deny
+
+- name: Allow SSH port
+  ansible.builtin.ufw:
+    rule: allow
+    port: "{{ ssh_port }}"
+    proto: tcp
+
+- name: Allow HTTP
+  ansible.builtin.ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+
+- name: Allow HTTPS
+  ansible.builtin.ufw:
+    rule: allow
+    port: "443"
+    proto: tcp
+
+- name: Enable UFW
+  ansible.builtin.command: ufw --force enable
+  changed_when: false
