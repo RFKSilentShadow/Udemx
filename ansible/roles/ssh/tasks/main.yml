@@ -11,7 +11,7 @@
     group: root
     mode: "0644"
 
-- name: Ensure SSH directory exists
+- name: Ensure SSH directory exists for udemx user
   ansible.builtin.file:
     path: "{{ udemx_home }}/.ssh"
     state: directory
@@ -19,7 +19,15 @@
     group: "{{ user_name }}"
     mode: "0700"
 
-- name: Check if host public key exists
+- name: Ensure SSH directory exists for own user
+  ansible.builtin.file:
+    path: "{{ own_user_home }}/.ssh"
+    state: directory
+    owner: "{{ own_user_name}}"
+    group: "{{ own_user_name }}"
+    mode: "0700"
+
+- name: Check if host public key exists for udemx user
   ansible.builtin.stat:
     path: "{{ host_ssh_pub_key }}"
   delegate_to: localhost
@@ -31,9 +39,15 @@
     msg: "Host public key not found: {{ host_ssh_pub_key }}"
   when: not host_pub_key.stat.exists
 
-- name: Install public key into authorized_keys
+- name: Install public key into authorized_keys for udemx user
   ansible.builtin.authorized_key:
     user: "{{ user_name }}"
+    key: "{{ lookup('file', host_ssh_pub_key) }}"
+    state: present
+
+- name: Install public key into authorized_keys for own user
+  ansible.builtin.authorized_key:
+    user: "{{ own_user_name }}"
     key: "{{ lookup('file', host_ssh_pub_key) }}"
     state: present
 

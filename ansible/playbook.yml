@@ -5,6 +5,9 @@
   vars:
     root_password: "Alma1234"
     ssh_port: 2222
+    own_user_name: "user"
+    own_user_home: "/home/user"
+    own_user_password: "Password123!"
     user_name: "udemx"
     udemx_password: "UdemxPass123!"
     user_email: "udemx@udemx.eu"
