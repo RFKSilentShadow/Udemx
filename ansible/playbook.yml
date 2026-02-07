@@ -47,7 +47,6 @@
     - role: nginx_ingress
     - role: fail2ban
     - role: mysql
-#    - role: udemx_app
     - role: demo_app
     - role: scripts
     - role: jenkins
