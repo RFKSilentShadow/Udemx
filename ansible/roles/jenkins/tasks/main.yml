@@ -176,14 +176,6 @@
     group: jenkins
     mode: "0700"
 
-- name: Install GitHub SSH private key
-  copy:
-    src: udemx-ssh-key
-    dest: /var/lib/jenkins/.ssh/github_id_ed25519
-    owner: jenkins
-    group: jenkins
-    mode: "0600"
-
 - name: Add github.com to Jenkins known_hosts
   ansible.builtin.known_hosts:
     path: /var/lib/jenkins/.ssh/known_hosts
