@@ -14,6 +14,10 @@
       - temurin-11-jdk
     state: present
     update_cache: yes
+  register: java_install
+  retries: 5
+  delay: 20
+  until: java_install is succeeded
 
 - name: Set default javac to Java 8
   ansible.builtin.alternatives:

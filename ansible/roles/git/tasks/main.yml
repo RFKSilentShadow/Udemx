@@ -2,6 +2,11 @@
   ansible.builtin.apt:
     name: git
     state: present
+    update_cache: yes
+  register: git_install
+  retries: 5
+  delay: 20
+  until: git_install is succeeded
 
 - name: Configure git default user for udemx
   ansible.builtin.command: sudo -u "{{ user_name }}" git config --global user.name "{{ user_name }}"

@@ -26,6 +26,10 @@
       - containerd.io
     state: present
     update_cache: yes
+  register: docker_install
+  retries: 5
+  delay: 15
+  until: docker_install is succeeded
 
 - name: Add user to docker group
   ansible.builtin.user:
@@ -105,6 +109,16 @@
       - "{{ registry_base_dir }}/config/config.yml:/etc/docker/registry/config.yml"
     networks:
       - name: registry_net
+
+- name: Pull registry UI image (retry)
+  community.docker.docker_image:
+    name: joxit/docker-registry-ui
+    tag: latest
+    source: pull
+  register: pull_ui
+  retries: 5
+  delay: 20
+  until: pull_ui is succeeded
 
 - name: Run Docker registry UI
   community.docker.docker_container:

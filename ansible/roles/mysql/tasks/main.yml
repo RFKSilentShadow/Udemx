@@ -2,7 +2,11 @@
   ansible.builtin.command: helm repo add bitnami https://charts.bitnami.com/bitnami
 
 - name: Update helm repos
-  ansible.builtin.command: helm repo update
+  command: helm repo update --timeout 5m
+  register: helm_update
+  retries: 5
+  delay: 10
+  until: helm_update.rc == 0
 
 - name: Install MariaDB
   ansible.builtin.command: >

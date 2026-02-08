@@ -1,10 +1,18 @@
 - name: Update apt cache
   ansible.builtin.apt:
     update_cache: yes
+  register: apt_update
+  retries: 5
+  delay: 15
+  until: apt_update is succeeded
 
 - name: Upgrade all packages
   ansible.builtin.apt:
     upgrade: dist
+  register: apt_upgrade
+  retries: 5
+  delay: 20
+  until: apt_upgrade is succeeded
 
 - name: Install basic packages
   ansible.builtin.apt:
@@ -22,3 +30,8 @@
       - apt-transport-https
       - ca-certificates
     state: present
+  register: basic_pkgs
+  retries: 5
+  delay: 20
+  until: basic_pkgs is succeeded
+
