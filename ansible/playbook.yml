@@ -26,7 +26,6 @@
     db_release: "udemx-db"
     ingress_release: "udemx-ingress"
     app_image: "udemx/hello:latest"
-    registry_host: "registry.local"
     registry_port: 5000
     registry_base_dir: /opt/registry
     host_ssh_pub_key: "<your_ssh_pubkey_path>"
