@@ -26,7 +26,8 @@
       <configVersion>2</configVersion>
       <userRemoteConfigs>
         <hudson.plugins.git.UserRemoteConfig>
-          <url>https://github.com/RFKSilentShadow/Udemx.git</url>
+          <url>git@github.com:RFKSilentShadow/Hello-Udemx-App.git</url>
+          <credentialsId>github-ssh</credentialsId>
         </hudson.plugins.git.UserRemoteConfig>
       </userRemoteConfigs>
       <branches>

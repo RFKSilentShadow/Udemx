@@ -81,9 +81,13 @@
     owner: jenkins
     group: jenkins
     mode: "0644"
+    timeout: 60
+  register: plugin_dl
+  retries: 5
+  delay: 10
+  until: plugin_dl is succeeded
 
   loop:
-    - configuration-as-code
     - pipeline-stage-tags-metadata
     - ionicons-api
     - caffeine-api
@@ -140,13 +144,14 @@
     - git
     - ansicolor
     - job-dsl
+    - configuration-as-code
     - mailer
     - git-server
     - pipeline-graph-analysis
     - instance-identity
     - display-url-api
     - sshd
-
+    
 - name: Create udemx Jenkins job directory
   file:
     path: /var/lib/jenkins/jobs/udemx
@@ -163,14 +168,43 @@
     group: jenkins
     mode: 0644
 
+- name: Create Jenkins .ssh directory
+  file:
+    path: /var/lib/jenkins/.ssh
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: "0700"
+
+- name: Install GitHub SSH private key
+  copy:
+    src: udemx-ssh-key
+    dest: /var/lib/jenkins/.ssh/github_id_ed25519
+    owner: jenkins
+    group: jenkins
+    mode: "0600"
+
+- name: Add github.com to Jenkins known_hosts
+  ansible.builtin.known_hosts:
+    path: /var/lib/jenkins/.ssh/known_hosts
+    name: github.com
+    key: "{{ lookup('pipe', 'ssh-keyscan github.com') }}"
+
+- name: Fix known_hosts ownership
+  ansible.builtin.file:
+    path: /var/lib/jenkins/.ssh/known_hosts
+    owner: jenkins
+    group: jenkins
+    mode: "0644"
+
 - name: Copy admin kubeconfig for jenkins
   become: true
   ansible.builtin.copy:
     src: /etc/rancher/k3s/k3s.yaml
-    dest: "/opt/kubeconfig"
+    dest: /opt/kubeconfig
     remote_src: true
-    owner: "jenkins"
-    group: "jenkins"
+    owner: jenkins
+    group: jenkins
     mode: "0600"
 
 - name: Start Jenkins after full config
