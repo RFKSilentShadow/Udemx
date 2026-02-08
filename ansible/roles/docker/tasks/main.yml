@@ -127,7 +127,7 @@
     state: started
     restart_policy: always
     ports:
-      - "8081:80"
+      - "127.0.0.1:8081:80"
     env:
       REGISTRY_TITLE: "Udemx Private Registry"
       REGISTRY_URL: "http://192.168.56.50:5000"
